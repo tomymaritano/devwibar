@@ -9,6 +9,7 @@ final class AppState: ObservableObject {
     @Published private(set) var snapshot = NetworkSnapshot.empty
     @Published private(set) var downloadHistory: [Double] = []
     @Published private(set) var uploadHistory: [Double] = []
+    @Published private(set) var latencyHistory: [Double] = []
     @Published private(set) var aiTraffic = AITrafficSnapshot.empty
     @Published private(set) var aiDiagnosis = AIDiagnosis.empty
     @Published var selectedAIApp: String?
@@ -135,6 +136,9 @@ final class AppState: ObservableObject {
                 let ms = await latency.read()
                 snapshot.latencyMs = ms
                 snapshot.updatedAt = Date()
+                if let ms {
+                    appendLatency(ms)
+                }
                 applyBrief()
             }
         } else {
@@ -167,6 +171,20 @@ final class AppState: ObservableObject {
     private func applyBrief() {
         let context = briefContext()
         aiDiagnosis = AIBrief.diagnose(context, previous: aiDiagnosis.kind)
+        persistWidgetSnapshot()
+    }
+
+    private func persistWidgetSnapshot() {
+        WidgetSnapshotStore.write(
+            WidgetSnapshot.make(
+                snapshot: snapshot,
+                downloadHistory: downloadHistory,
+                uploadHistory: uploadHistory,
+                latencyHistory: latencyHistory,
+                diagnosis: aiDiagnosis,
+                topFlow: aiTraffic.topFlows.first
+            )
+        )
     }
 
     private func syncSelectedAIApp() {
@@ -198,6 +216,13 @@ final class AppState: ObservableObject {
         }
         if uploadHistory.count > historyLimit {
             uploadHistory.removeFirst(uploadHistory.count - historyLimit)
+        }
+    }
+
+    private func appendLatency(_ ms: Double) {
+        latencyHistory.append(ms)
+        if latencyHistory.count > historyLimit {
+            latencyHistory.removeFirst(latencyHistory.count - historyLimit)
         }
     }
 }

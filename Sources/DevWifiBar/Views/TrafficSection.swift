@@ -8,7 +8,7 @@ struct TrafficSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Traffic")
+            Text("History")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Theme.secondary)
 

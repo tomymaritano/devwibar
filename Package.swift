@@ -20,7 +20,7 @@ let package = Package(
         .executableTarget(
             name: "DevWifiBar",
             dependencies: ["DevWifiCore"],
-            exclude: ["Info.plist"],
+            exclude: ["Info.plist", "DevWifiBar.entitlements"],
             resources: [
                 .process("Resources"),
             ],

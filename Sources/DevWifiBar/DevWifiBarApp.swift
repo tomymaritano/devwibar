@@ -15,12 +15,13 @@ struct DevWifiBarApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
+    let layout = WidgetLayoutStore()
     private var statusBar: StatusBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         state.start()
-        statusBar = StatusBarController(state: state)
+        statusBar = StatusBarController(state: state, layout: layout)
 
         if PreviewExport.requested() {
             let docs = PreviewExport.outputDirectory()

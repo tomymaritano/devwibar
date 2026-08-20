@@ -5,12 +5,14 @@ import SwiftUI
 @MainActor
 final class StatusBarController: NSObject {
     private let state: AppState
+    private let layout: WidgetLayoutStore
     private let statusItem: NSStatusItem
     private let popover: NSPopover
     private var cancellables = Set<AnyCancellable>()
 
-    init(state: AppState) {
+    init(state: AppState, layout: WidgetLayoutStore) {
         self.state = state
+        self.layout = layout
         self.statusItem = NSStatusBar.system.statusItem(withLength: 24)
         self.popover = NSPopover()
         super.init()
@@ -20,7 +22,7 @@ final class StatusBarController: NSObject {
     }
 
     private func configurePopover() {
-        let host = NSHostingController(rootView: MenuPanelView().environmentObject(state))
+        let host = NSHostingController(rootView: MenuPanelView().environmentObject(state).environmentObject(layout))
         host.sizingOptions = [.intrinsicContentSize]
         popover.contentViewController = host
         popover.behavior = .transient

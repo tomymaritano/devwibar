@@ -1,0 +1,48 @@
+name: DevWifiBar
+options:
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  defaultConfig: Release
+packages:
+  DevWifiPackage:
+    path: .
+targets:
+  DevWifiBarWidgets:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/DevWifiBarWidgets
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tomymaritano.devwibar.widgets
+        PRODUCT_NAME: DevWifiBarWidgets
+        INFOPLIST_FILE: Sources/DevWifiBarWidgets/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Sources/DevWifiBarWidgets/DevWifiBarWidgets.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: NO
+        AD_HOC_CODE_SIGNING_ALLOWED: YES
+        MARKETING_VERSION: "0.2.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+    dependencies:
+      - package: DevWifiPackage
+        product: DevWifiCore
+schemes:
+  DevWifiBarWidgets:
+    build:
+      targets:
+        DevWifiBarWidgets: all
+    run:
+      config: Debug
+    archive:
+      config: Release

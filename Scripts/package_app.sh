@@ -11,6 +11,8 @@ DIST="$ROOT/dist"
 APP="$DIST/DevWifiBar.app"
 CONTENTS="$APP/Contents"
 MACOS_DIR="$CONTENTS/MacOS"
+APP_ENTITLEMENTS="$ROOT/Sources/DevWifiBar/DevWifiBar.entitlements"
+WIDGET_ENTITLEMENTS="$ROOT/Sources/DevWifiBarWidgets/DevWifiBarWidgets.entitlements"
 
 rm -rf "$DIST"
 mkdir -p "$MACOS_DIR" "$CONTENTS/Resources"
@@ -43,7 +45,58 @@ if [[ -x /usr/libexec/PlistBuddy ]]; then
 fi
 
 printf 'APPL????' > "$CONTENTS/PkgInfo"
-codesign --force --deep --sign - "$APP"
+
+embed_widgets() {
+  if ! command -v xcodebuild >/dev/null 2>&1 || ! xcodebuild -version >/dev/null 2>&1; then
+    echo "Skipping widgets: full Xcode / xcodebuild not available"
+    return 0
+  fi
+
+  if [[ ! -f "$ROOT/DevWifiBar.xcodeproj/project.pbxproj" ]]; then
+    if command -v xcodegen >/dev/null 2>&1; then
+      (cd "$ROOT" && xcodegen generate)
+    else
+      echo "Skipping widgets: xcodegen not found"
+      return 0
+    fi
+  fi
+
+  if ! xcodebuild \
+      -project "$ROOT/DevWifiBar.xcodeproj" \
+      -scheme DevWifiBarWidgets \
+      -configuration Release \
+      -derivedDataPath "$ROOT/.build/xcode" \
+      CODE_SIGN_IDENTITY="-" \
+      CODE_SIGNING_REQUIRED=NO \
+      CODE_SIGNING_ALLOWED=YES \
+      ONLY_ACTIVE_ARCH=YES \
+      build
+  then
+    echo "Widget build failed; packaging app only"
+    return 0
+  fi
+
+  local appex
+  appex="$(find "$ROOT/.build/xcode/Build/Products" -name 'DevWifiBarWidgets.appex' -print -quit || true)"
+  if [[ -z "$appex" ]]; then
+    echo "Widget .appex not found after build"
+    return 0
+  fi
+
+  mkdir -p "$CONTENTS/PlugIns"
+  rm -rf "$CONTENTS/PlugIns/DevWifiBarWidgets.appex"
+  cp -R "$appex" "$CONTENTS/PlugIns/DevWifiBarWidgets.appex"
+  codesign --force --sign - --entitlements "$WIDGET_ENTITLEMENTS" "$CONTENTS/PlugIns/DevWifiBarWidgets.appex"
+  echo "Embedded DevWifiBarWidgets.appex"
+}
+
+embed_widgets
+
+if [[ -d "$CONTENTS/PlugIns/DevWifiBarWidgets.appex" ]]; then
+  codesign --force --sign - --entitlements "$APP_ENTITLEMENTS" "$APP"
+else
+  codesign --force --deep --sign - --entitlements "$APP_ENTITLEMENTS" "$APP"
+fi
 
 ZIP="$DIST/DevWifiBar-${VERSION}.zip"
 ditto -c -k --keepParent "$APP" "$ZIP"

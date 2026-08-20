@@ -1,6 +1,6 @@
 cask "devwibar" do
-  version "0.1.0"
-  sha256 "5f11bed3adb242a2b1c04caeec2c575dee69a26e322dbee5886ce494eb5a7df4"
+  version "0.2.0"
+  sha256 "4976e594a78d290bde49fd36dd1490b8480a82665272c8fb6f0b1586ed89d6cd"
 
   url "https://github.com/tomymaritano/devwibar/releases/download/v#{version}/DevWifiBar-#{version}.zip"
   name "DevWifiBar"

@@ -43,7 +43,31 @@ Evidence is three chips — Ping, Traffic, Signal — plus a one-line reason wit
 
 **Network** — IP, gateway, DNS (Cloudflare / Google / Quad9 / OpenDNS labels), latency to 1.1.1.1. Click a value to copy.
 
-**Footer** — Open at login, Quit.
+**Latency** — optional ping sparkline to 1.1.1.1. Off by default; turn it on in Widgets.
+
+**Footer** — Open at login, Widgets, Quit.
+
+## Widgets
+
+Click **Widgets** for a gallery, same idea as adding Desktop widgets: each card is a different density. **Add** puts that info in the panel; **Added** takes it out.
+
+| Widget | What it adds |
+| --- | --- |
+| Metric | One number: RSSI + quality |
+| Signal | Quality bar, channel, radio |
+| History | RX/TX sparkline and totals |
+| Combined | Signal + traffic + ping in one block |
+| Latency | Ping sparkline |
+| On the link | LLM radar |
+| Network | IP, gateway, DNS |
+
+The same templates appear in the macOS widget gallery (Desktop / Notification Center) when the `.appex` is embedded.
+
+macOS: right-click the desktop or open Notification Center → Edit Widgets → DevWifiBar.
+
+System widgets refresh about every five minutes. Radar only appears after DevWifiBar has written a snapshot (it will not run `lsof` inside the widget sandbox). If the gallery is empty, build with full Xcode so `package_app.sh` can embed `DevWifiBarWidgets.appex`.
+
+Homebrew ships v0.2.0. Upgrade with `brew upgrade --cask devwibar`.
 
 ## Install
 
@@ -57,7 +81,7 @@ open -a DevWifiBar
 
 The cask lives in [`tomymaritano/homebrew-tap`](https://github.com/tomymaritano/homebrew-tap). Upgrade with `brew upgrade --cask devwibar`.
 
-v0.1.0 is ad-hoc signed. If Gatekeeper blocks the first launch: right-click DevWifiBar → Open.
+v0.2.0 is ad-hoc signed. If Gatekeeper blocks the first launch: right-click DevWifiBar → Open.
 
 ### From source
 
@@ -93,7 +117,7 @@ System Settings → Privacy & Security → Location Services → DevWifiBar.
 | Latency | `ping` to 1.1.1.1 |
 | AI apps on the link | `lsof` + `nettop`, matched against [`AICatalog`](Sources/DevWifiCore/AICatalog.swift) |
 
-`DevWifiCore` is the readers. `DevWifiBar` is an `LSUIElement` AppKit status item + SwiftUI popover.
+`DevWifiCore` is the readers and the widget snapshot. `DevWifiBar` is an `LSUIElement` AppKit status item + SwiftUI popover. `DevWifiBarWidgets` is the WidgetKit extension.
 
 Radar rules (with hysteresis): latency is high above **80 ms** and clears below **60 ms**; saturate above **2.5 Mbps** and clears below **1.6 Mbps**. If ping is high and signal is Excellent, the verdict is uplink / LLM host — not RSSI.
 
@@ -103,9 +127,10 @@ Radar rules (with hysteresis): latency is high above **80 ms** and clears below 
 swift test
 swift build -c release --product DevWifiBar
 make package
+make widgets          # XcodeGen + WidgetKit extension (full Xcode)
 ```
 
-GitHub Actions (`macos-14`) runs tests and uploads the `.app` + zip on every push to `main`.
+GitHub Actions (`macos-14`) runs tests, generates the widget project, and uploads the `.app` + zip on every push to `main`.
 
 ## Phase 2
 
