@@ -1,0 +1,31 @@
+name: macOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Test
+        run: swift test
+
+      - name: Package app
+        run: ./Scripts/package_app.sh
+
+      - name: Upload DevWifiBar.app
+        uses: actions/upload-artifact@v4
+        with:
+          name: DevWifiBar
+          path: |
+            dist/DevWifiBar.app
+            dist/DevWifiBar-*.zip

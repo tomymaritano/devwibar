@@ -1,0 +1,36 @@
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "DevWifiBar",
+    platforms: [
+        .macOS(.v14),
+    ],
+    products: [
+        .library(name: "DevWifiCore", targets: ["DevWifiCore"]),
+        .executable(name: "DevWifiBar", targets: ["DevWifiBar"]),
+    ],
+    targets: [
+        .target(
+            name: "DevWifiCore",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
+        ),
+        .executableTarget(
+            name: "DevWifiBar",
+            dependencies: ["DevWifiCore"],
+            exclude: ["Info.plist"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "DevWifiCoreTests",
+            dependencies: ["DevWifiCore"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
+        ),
+    ]
+)
