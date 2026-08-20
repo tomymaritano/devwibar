@@ -26,7 +26,7 @@ No Dock icon. The app is a `LSUIElement` accessory.
 
 ### From source (today)
 
-Requires macOS 14+ and Swift 6.
+Requires macOS 14+ and Swift 5.10+ (Xcode 15.4 or later).
 
 ```bash
 git clone https://github.com/tomymaritano/devwibar.git
