@@ -1,0 +1,30 @@
+import SwiftUI
+
+struct FooterView: View {
+    @Binding var launchAtLogin: Bool
+    var canManageLogin: Bool
+    var onLaunchAtLogin: (Bool) -> Void
+    var onQuit: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Toggle("Open at login", isOn: Binding(
+                get: { launchAtLogin },
+                set: { onLaunchAtLogin($0) }
+            ))
+            .toggleStyle(.checkbox)
+            .font(.system(size: 11))
+            .disabled(!canManageLogin)
+            .help(canManageLogin ? "Start DevWifiBar when you log in" : "Available after installing the .app")
+
+            Spacer()
+
+            Button("Quit") {
+                onQuit()
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(Theme.secondary)
+        }
+    }
+}
