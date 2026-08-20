@@ -9,6 +9,9 @@ final class AppState: ObservableObject {
     @Published private(set) var snapshot = NetworkSnapshot.empty
     @Published private(set) var downloadHistory: [Double] = []
     @Published private(set) var uploadHistory: [Double] = []
+    @Published private(set) var aiTraffic = AITrafficSnapshot.empty
+    @Published private(set) var aiDiagnosis = AIDiagnosis.empty
+    @Published var selectedAIApp: String?
     @Published var launchAtLoginEnabled = false
     @Published var copiedField: String?
 
@@ -16,10 +19,14 @@ final class AppState: ObservableObject {
     private let network = NetworkReader()
     private let latency = LatencyReader()
     private let counters = InterfaceCounters()
+    private let trafficReader = ProcessTrafficReader()
 
     private var timer: Timer?
     private var pathMonitor: NWPathMonitor?
     private var lastBytes: (counters: ByteCounters, at: Date)?
+    private var lastProcessBytes: [String: ProcessByteCounters] = [:]
+    private var lastProcessBytesAt: Date?
+    private var aiRefreshInFlight = false
     private var pathSatisfied = false
     private var tickCount = 0
     private let historyLimit = 30
@@ -30,6 +37,7 @@ final class AppState: ObservableObject {
         launchAtLoginEnabled = LaunchAtLogin.isEnabled
         startPathMonitor()
         refresh(includeLatency: true)
+        refreshAITraffic()
 
         let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -62,6 +70,11 @@ final class AppState: ObservableObject {
     private func handleTick() {
         tickCount += 1
         refresh(includeLatency: tickCount.isMultiple(of: 4))
+        if tickCount.isMultiple(of: 4) {
+            refreshAITraffic()
+        } else {
+            applyBrief()
+        }
     }
 
     private func startPathMonitor() {
@@ -122,8 +135,59 @@ final class AppState: ObservableObject {
                 let ms = await latency.read()
                 snapshot.latencyMs = ms
                 snapshot.updatedAt = Date()
+                applyBrief()
+            }
+        } else {
+            applyBrief()
+        }
+    }
+
+    private func refreshAITraffic() {
+        guard !aiRefreshInFlight else { return }
+        aiRefreshInFlight = true
+        let reader = trafficReader
+        let previous = lastProcessBytes
+        let elapsed = lastProcessBytesAt.map { Date().timeIntervalSince($0) } ?? 0
+        Task.detached {
+            let sample = reader.sample(previousBytes: previous, elapsed: elapsed)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.aiTraffic = sample.traffic
+                self.syncSelectedAIApp()
+                if !sample.totals.isEmpty {
+                    self.lastProcessBytes = sample.totals
+                    self.lastProcessBytesAt = Date()
+                }
+                self.aiRefreshInFlight = false
+                self.applyBrief()
             }
         }
+    }
+
+    private func applyBrief() {
+        let context = briefContext()
+        aiDiagnosis = AIBrief.diagnose(context, previous: aiDiagnosis.kind)
+    }
+
+    private func syncSelectedAIApp() {
+        let apps = Set(aiTraffic.flows.map(\.app))
+        if let selectedAIApp, apps.contains(selectedAIApp) {
+            return
+        }
+        selectedAIApp = aiTraffic.primaryApp
+    }
+
+    private func briefContext() -> AIBriefContext {
+        AIBriefContext(
+            quality: snapshot.wifi.quality,
+            powerOn: snapshot.wifi.powerOn,
+            connected: snapshot.wifi.connected,
+            latencyMs: snapshot.latencyMs,
+            downloadMbps: snapshot.downloadMbps,
+            uploadMbps: snapshot.uploadMbps,
+            downloadRising: AIBrief.isDownloadRising(current: snapshot.downloadMbps, history: downloadHistory),
+            traffic: aiTraffic
+        )
     }
 
     private func appendHistory(download: Double, upload: Double) {

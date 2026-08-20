@@ -15,7 +15,9 @@ struct FooterView: View {
             .toggleStyle(.checkbox)
             .font(.system(size: 11))
             .disabled(!canManageLogin)
-            .help(canManageLogin ? "Start DevWifiBar when you log in" : "Available after installing the .app")
+            .help(canManageLogin
+                ? "Start DevWifiBar when you log in. AI radar uses process names and destinations only."
+                : "Available after installing the .app")
 
             Spacer()
 

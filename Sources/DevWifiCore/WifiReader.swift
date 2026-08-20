@@ -23,7 +23,7 @@ public struct WifiReader: Sendable {
         return WifiInfo(
             ssid: ssid,
             rssi: associated ? Int(rssi) : nil,
-            channel: channel.map(Int.init),
+            channel: channel,
             bssid: interface.bssid(),
             transmitRateMbps: rate > 0 ? rate : nil,
             interfaceName: interface.interfaceName ?? "en0",

@@ -6,6 +6,10 @@ struct HeaderView: View {
 
     var body: some View {
         HStack(alignment: .top) {
+            BrandMarkView(offline: !snapshot.wifi.powerOn, color: Theme.teal)
+                .frame(width: 22, height: 22)
+                .padding(.top, 1)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text("DevWifiBar")
                     .font(.system(size: 15, weight: .semibold))

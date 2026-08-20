@@ -6,32 +6,30 @@ struct DevWifiBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuPanelView()
-                .environmentObject(appDelegate.state)
-        } label: {
-            ObservedStatusIcon(state: appDelegate.state)
+        Settings {
+            EmptyView()
         }
-        .menuBarExtraStyle(.window)
-    }
-}
-
-struct ObservedStatusIcon: View {
-    @ObservedObject var state: AppState
-
-    var body: some View {
-        StatusIcon(snapshot: state.snapshot)
-            .onAppear { state.start() }
     }
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
+    private var statusBar: StatusBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         state.start()
+        statusBar = StatusBarController(state: state)
+
+        if PreviewExport.requested() {
+            let docs = PreviewExport.outputDirectory()
+            try? FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)
+            Task { @MainActor in
+                await PreviewExport.run(state: state, directory: docs)
+                NSApp.terminate(nil)
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

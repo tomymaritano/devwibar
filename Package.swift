@@ -21,6 +21,9 @@ let package = Package(
             name: "DevWifiBar",
             dependencies: ["DevWifiCore"],
             exclude: ["Info.plist"],
+            resources: [
+                .process("Resources"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]

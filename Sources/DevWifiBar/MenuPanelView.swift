@@ -30,6 +30,12 @@ struct MenuPanelView: View {
 
             divider
 
+            AISection(traffic: state.aiTraffic, diagnosis: state.aiDiagnosis, selectedApp: $state.selectedAIApp)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
+            divider
+
             NetworkSection(
                 snapshot: state.snapshot,
                 copiedField: state.copiedField,

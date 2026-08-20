@@ -29,6 +29,13 @@ fi
 
 chmod +x "$MACOS_DIR/DevWifiBar"
 cp "$ROOT/Sources/DevWifiBar/Info.plist" "$CONTENTS/Info.plist"
+if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
+  cp "$ROOT/Resources/AppIcon.icns" "$CONTENTS/Resources/AppIcon.icns"
+fi
+if [[ -d "$ROOT/Sources/DevWifiBar/Resources/Providers" ]]; then
+  mkdir -p "$CONTENTS/Resources/Providers"
+  cp "$ROOT/Sources/DevWifiBar/Resources/Providers/"*.png "$CONTENTS/Resources/Providers/"
+fi
 
 if [[ -x /usr/libexec/PlistBuddy ]]; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "$CONTENTS/Info.plist"
