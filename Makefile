@@ -1,4 +1,4 @@
-.PHONY: build test package open widgets
+.PHONY: build test package open widgets notary
 
 build:
 	swift build -c release --product DevWifiBar
