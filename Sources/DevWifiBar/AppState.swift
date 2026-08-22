@@ -41,8 +41,9 @@ final class AppState: ObservableObject {
         refreshAITraffic()
 
         let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
+            let state = self
             Task { @MainActor in
-                self?.handleTick()
+                state?.handleTick()
             }
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -81,10 +82,11 @@ final class AppState: ObservableObject {
     private func startPathMonitor() {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
+            let satisfied = path.status == .satisfied
+            let state = self
             Task { @MainActor in
-                guard let self else { return }
-                self.pathSatisfied = path.status == .satisfied
-                self.refresh(includeLatency: false)
+                state?.pathSatisfied = satisfied
+                state?.refresh(includeLatency: false)
             }
         }
         monitor.start(queue: DispatchQueue(label: "com.tomymaritano.devwibar.path"))
@@ -155,15 +157,15 @@ final class AppState: ObservableObject {
         Task.detached {
             let sample = reader.sample(previousBytes: previous, elapsed: elapsed)
             await MainActor.run { [weak self] in
-                guard let self else { return }
-                self.aiTraffic = sample.traffic
-                self.syncSelectedAIApp()
+                let state = self
+                state?.aiTraffic = sample.traffic
+                state?.syncSelectedAIApp()
                 if !sample.totals.isEmpty {
-                    self.lastProcessBytes = sample.totals
-                    self.lastProcessBytesAt = Date()
+                    state?.lastProcessBytes = sample.totals
+                    state?.lastProcessBytesAt = Date()
                 }
-                self.aiRefreshInFlight = false
-                self.applyBrief()
+                state?.aiRefreshInFlight = false
+                state?.applyBrief()
             }
         }
     }
