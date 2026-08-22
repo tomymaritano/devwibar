@@ -81,7 +81,7 @@ open -a DevWifiBar
 
 The cask lives in [`tomymaritano/homebrew-tap`](https://github.com/tomymaritano/homebrew-tap). Upgrade with `brew upgrade --cask devwibar`.
 
-v0.2.0 is ad-hoc signed. If Gatekeeper blocks the first launch: right-click DevWifiBar → Open.
+Releases are Developer ID signed and notarized. GitHub Actions needs the same secrets as Dripnex (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`). Local: `Scripts/setup_notary.sh` then `NOTARY_KEYCHAIN_PROFILE=devwibar-notary make package`.
 
 ### From source
 
@@ -130,7 +130,7 @@ make package
 make widgets          # XcodeGen + WidgetKit extension (full Xcode)
 ```
 
-GitHub Actions (`macos-14`) runs tests, generates the widget project, and uploads the `.app` + zip on every push to `main`.
+GitHub Actions (`macos-14`) runs tests and an ad-hoc package on every push to `main`. A tag `vX.Y.Z` (or **Release** → Run workflow) signs with Developer ID, notarizes, and attaches `DevWifiBar-X.Y.Z.zip` to the GitHub Release.
 
 ## Phase 2
 

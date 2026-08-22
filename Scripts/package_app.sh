@@ -61,15 +61,22 @@ embed_widgets() {
     fi
   fi
 
+  local only_active=YES
+  if [[ "${UNIVERSAL:-0}" == "1" ]]; then
+    only_active=NO
+  fi
+
   if ! xcodebuild \
       -project "$ROOT/DevWifiBar.xcodeproj" \
       -scheme DevWifiBarWidgets \
       -configuration Release \
       -derivedDataPath "$ROOT/.build/xcode" \
+      MARKETING_VERSION="$VERSION" \
+      CURRENT_PROJECT_VERSION="$VERSION" \
       CODE_SIGN_IDENTITY="-" \
       CODE_SIGNING_REQUIRED=NO \
       CODE_SIGNING_ALLOWED=YES \
-      ONLY_ACTIVE_ARCH=YES \
+      ONLY_ACTIVE_ARCH="$only_active" \
       build
   then
     echo "Widget build failed; packaging app only"
@@ -92,14 +99,81 @@ embed_widgets() {
 
 embed_widgets
 
-if [[ -d "$CONTENTS/PlugIns/DevWifiBarWidgets.appex" ]]; then
-  codesign --force --sign - --entitlements "$APP_ENTITLEMENTS" "$APP"
+signing_identity() {
+  if [[ -n "${DEVELOPER_ID:-}" ]]; then
+    printf '%s\n' "$DEVELOPER_ID"
+    return 0
+  fi
+  security find-identity -v -p codesigning 2>/dev/null \
+    | awk -F'"' '/Developer ID Application/ { print $2; exit }'
+}
+
+sign_app() {
+  local identity="$1"
+  local extra=()
+  if [[ "$identity" != "-" ]]; then
+    extra+=(--options runtime --timestamp)
+  fi
+  if [[ -d "$CONTENTS/PlugIns/DevWifiBarWidgets.appex" ]]; then
+    codesign --force "${extra[@]}" --entitlements "$WIDGET_ENTITLEMENTS" --sign "$identity" \
+      "$CONTENTS/PlugIns/DevWifiBarWidgets.appex"
+    codesign --force "${extra[@]}" --entitlements "$APP_ENTITLEMENTS" --sign "$identity" "$APP"
+  else
+    codesign --force --deep "${extra[@]}" --entitlements "$APP_ENTITLEMENTS" --sign "$identity" "$APP"
+  fi
+}
+
+can_notarize() {
+  [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" ]] \
+    || [[ -n "${APPLE_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]
+}
+
+notarize_zip() {
+  local zip="$1"
+  if [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" ]]; then
+    echo "Notarizing $zip with profile $NOTARY_KEYCHAIN_PROFILE"
+    xcrun notarytool submit "$zip" --keychain-profile "$NOTARY_KEYCHAIN_PROFILE" --wait
+  else
+    echo "Notarizing $zip with Apple ID $APPLE_ID"
+    xcrun notarytool submit "$zip" \
+      --apple-id "$APPLE_ID" \
+      --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+      --team-id "$APPLE_TEAM_ID" \
+      --wait
+  fi
+}
+
+IDENTITY="$(signing_identity || true)"
+if [[ -n "$IDENTITY" ]]; then
+  echo "Signing with $IDENTITY"
+  sign_app "$IDENTITY"
 else
-  codesign --force --deep --sign - --entitlements "$APP_ENTITLEMENTS" "$APP"
+  if [[ "${REQUIRE_NOTARIZE:-0}" == "1" ]]; then
+    echo "REQUIRE_NOTARIZE=1 but no Developer ID Application identity" >&2
+    exit 1
+  fi
+  echo "No Developer ID Application identity; ad-hoc sign (Gatekeeper will warn)"
+  sign_app "-"
 fi
 
 ZIP="$DIST/DevWifiBar-${VERSION}.zip"
 ditto -c -k --keepParent "$APP" "$ZIP"
 
+if [[ -n "$IDENTITY" && "$IDENTITY" != "-" ]] && can_notarize; then
+  notarize_zip "$ZIP"
+  xcrun stapler staple "$APP"
+  ditto -c -k --keepParent "$APP" "$ZIP"
+  echo "Notarized and stapled $APP"
+elif [[ -n "$IDENTITY" && "$IDENTITY" != "-" ]]; then
+  if [[ "${REQUIRE_NOTARIZE:-0}" == "1" ]]; then
+    echo "REQUIRE_NOTARIZE=1 but missing NOTARY_KEYCHAIN_PROFILE or APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID" >&2
+    exit 1
+  fi
+  echo "Signed but not notarized. Run Scripts/setup_notary.sh once, then:"
+  echo "  NOTARY_KEYCHAIN_PROFILE=devwibar-notary ./Scripts/package_app.sh"
+fi
+
 echo "Built $APP"
 echo "Zipped $ZIP"
+codesign -dv --verbose=2 "$APP" 2>&1 | head -20 || true
+
