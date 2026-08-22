@@ -67,7 +67,7 @@ macOS: right-click the desktop or open Notification Center → Edit Widgets → 
 
 System widgets refresh about every five minutes. Radar only appears after DevWifiBar has written a snapshot (it will not run `lsof` inside the widget sandbox). If the gallery is empty, build with full Xcode so `package_app.sh` can embed `DevWifiBarWidgets.appex`.
 
-Homebrew ships v0.2.0. Upgrade with `brew upgrade --cask devwibar`.
+Homebrew ships v0.2.1 (Developer ID signed and notarized). Upgrade with `brew upgrade --cask devwibar`.
 
 ## Install
 
@@ -81,7 +81,7 @@ open -a DevWifiBar
 
 The cask lives in [`tomymaritano/homebrew-tap`](https://github.com/tomymaritano/homebrew-tap). Upgrade with `brew upgrade --cask devwibar`.
 
-Releases are Developer ID signed and notarized. GitHub Actions needs the same secrets as Dripnex (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`). Local: `Scripts/setup_notary.sh` then `NOTARY_KEYCHAIN_PROFILE=devwibar-notary make package`.
+Releases are Developer ID signed and notarized. Gatekeeper opens them without right-click → Open.
 
 ### From source
 

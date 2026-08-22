@@ -1,6 +1,6 @@
 cask "devwibar" do
-  version "0.2.0"
-  sha256 "4976e594a78d290bde49fd36dd1490b8480a82665272c8fb6f0b1586ed89d6cd"
+  version "0.2.1"
+  sha256 "2c35375ddc75ee491c8533856a189f0630a0ce9a80efb6b2a34efac6ad69d297"
 
   url "https://github.com/tomymaritano/devwibar/releases/download/v#{version}/DevWifiBar-#{version}.zip"
   name "DevWifiBar"
@@ -19,9 +19,4 @@ cask "devwibar" do
   zap trash: [
     "~/Library/Preferences/com.tomymaritano.devwibar.plist",
   ]
-
-  caveats <<~EOS
-    DevWifiBar is ad-hoc signed. If Gatekeeper blocks it, right-click
-    the app and choose Open.
-  EOS
 end
